@@ -1,0 +1,13 @@
+version: "2"
+services:
+  app:
+    container_name: customer-cart
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile-dev
+    volumes:
+      - ./:/go/src/github.com/anhhuy1010/customer-cart
+    ports:
+      - 8004:8004
+      - 5004:5004
+
