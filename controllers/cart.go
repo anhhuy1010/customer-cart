@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/anhhuy1010/customer-cart/constant"
 	"github.com/anhhuy1010/customer-cart/grpc"
 	"github.com/anhhuy1010/customer-cart/helpers/respond"
 	"github.com/anhhuy1010/customer-cart/helpers/util"
@@ -52,7 +53,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 	}
 	cartData := &models.Carts{}
 	if req.CartUuid == "" {
-		cartData.Uuid = util.GenerateUUID()
+		cartData.CartUuid = util.GenerateUUID()
 		cartData.Total = 0
 
 		if _, err := cartData.Insert(); err != nil {
@@ -60,7 +61,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 			return
 		}
 	} else {
-		cond := bson.M{"uuid": req.CartUuid}
+		cond := bson.M{"cart_uuid": req.CartUuid}
 		cartData, err = cartModel.FindOne(cond)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -74,13 +75,13 @@ func (cartCtr CartController) Create(c *gin.Context) {
 		return
 	}
 	cartItem := models.CartItem{
-		Uuid:         util.GenerateUUID(),
-		CartUuid:     cartData.Uuid,
+		CartUuid:     cartData.CartUuid,
 		ProductUuid:  req.ProductUuid,
 		ProductName:  productDetail.Name,
 		Quantity:     1,
 		ProductPrice: productDetail.Price,
 		ProductTotal: 1 * productDetail.Price,
+		CartItemUuid: util.GenerateUUID(),
 	}
 	_, err = cartItem.Insert()
 	if err != nil {
@@ -116,6 +117,8 @@ func (cartCtl CartController) Detail(c *gin.Context) {
 
 		itemm = append(itemm, request.GetCartItemResponse{
 			ProductUuid:  item.ProductUuid,
+			CartItemUuid: item.CartItemUuid,
+			CartUuid:     item.CartUuid,
 			ProductName:  item.ProductName,
 			ProductPrice: item.ProductPrice,
 			Quantity:     item.Quantity,
@@ -128,4 +131,40 @@ func (cartCtl CartController) Detail(c *gin.Context) {
 		Total:    total,
 	}
 	c.JSON(http.StatusOK, respond.Success(response, "Successfully"))
+}
+
+func (cartCtl CartController) Delete(c *gin.Context) {
+	cartModel := new(models.CartItem)
+	var reqUri request.DeleteItemUri
+	err := c.ShouldBindUri(&reqUri)
+	if err != nil {
+		_ = c.Error(err)
+		c.JSON(http.StatusBadRequest, respond.MissingParams())
+		return
+	}
+
+	condition := bson.M{"cart_uuid": reqUri.CartUuid}
+	_, err = cartModel.FindOne(condition)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusOK, respond.ErrorCommon("cart no found!"))
+		return
+	}
+	condition = bson.M{"cart_item_uuid": reqUri.CartItemUuid}
+	cartitemm, err := cartModel.FindOne(condition)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusOK, respond.ErrorCommon("cart no found!"))
+		return
+	}
+
+	cartitemm.IsDelete = constant.DELETE
+
+	_, err = cartitemm.Update()
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusOK, respond.UpdatedFail())
+		return
+	}
+	c.JSON(http.StatusOK, respond.Success(cartitemm.CartItemUuid, "Delete successfully"))
 }

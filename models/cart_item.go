@@ -2,10 +2,14 @@ package models
 
 import (
 	"context"
+	"log"
+	"time"
+
 	// "log"
 
 	"github.com/anhhuy1010/customer-cart/constant"
 	"github.com/anhhuy1010/customer-cart/database"
+	"github.com/anhhuy1010/customer-cart/helpers/util"
 
 	// "github.com/anhhuy1010/customer-cart/helpers/util"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,15 +19,17 @@ import (
 //"go.mongodb.org/mongo-driver/bson"
 
 type CartItem struct {
-	Uuid         string  `json:"uuid" bson:"uuid"`
-	ProductUuid  string  `json:"product_uuid" bson:"product_uuid"`
-	CartUuid     string  `json:"cart_uuid" bson:"cart_uuid"`
-	ProductName  string  `json:"product_name" bson:"product_name"`
-	ProductPrice float64 `json:"product_price" bson:"product_price"`
-	Quantity     int     `json:"quantity" bson:"quantity"`
-	ProductTotal float64 `json:"product_total" bson:"product_total"`
-	IsDelete     int     `json:"is_delete" bson:"is_delete"`
-	IsActive     int     `json:"is_active" bson:"is_active"`
+	CartUuid     string    `json:"cart_uuid" bson:"cart_uuid"`
+	ProductUuid  string    `json:"product_uuid" bson:"product_uuid"`
+	CartItemUuid string    `json:"cart_item_uuid" bson:"cart_item_uuid"`
+	ProductName  string    `json:"product_name" bson:"product_name"`
+	ProductPrice float64   `json:"product_price" bson:"product_price"`
+	Quantity     int       `json:"quantity" bson:"quantity"`
+	ProductTotal float64   `json:"product_total" bson:"product_total"`
+	IsDelete     int       `json:"is_delete" bson:"is_delete"`
+	IsActive     int       `json:"is_active" bson:"is_active"`
+	CreatedAt    time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" bson:"updated_at"`
 }
 
 func (u *CartItem) Model() *mongo.Collection {
@@ -59,38 +65,38 @@ func (u *CartItem) Find(conditions map[string]interface{}, opts ...*options.Find
 	return carts, nil
 }
 
-// func (u *Carts) Pagination(ctx context.Context, conditions map[string]interface{}, modelOptions ...ModelOption) ([]*Carts, error) {
-// 	coll := u.Model()
+func (u *Carts) Pagination(ctx context.Context, conditions map[string]interface{}, modelOptions ...ModelOption) ([]*Carts, error) {
+	coll := u.Model()
 
-// 	conditions["is_delete"] = constant.UNDELETE
+	conditions["is_delete"] = constant.UNDELETE
 
-// 	modelOpt := ModelOption{}
-// 	findOptions := modelOpt.GetOption(modelOptions)
-// 	cursor, err := coll.Find(context.TODO(), conditions, findOptions)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	modelOpt := ModelOption{}
+	findOptions := modelOpt.GetOption(modelOptions)
+	cursor, err := coll.Find(context.TODO(), conditions, findOptions)
+	if err != nil {
+		return nil, err
+	}
 
-// 	var items []*Carts
-// 	for cursor.Next(context.TODO()) {
-// 		var elem Carts
-// 		err := cursor.Decode(&elem)
-// 		if err != nil {
-// 			log.Println("[Decode] PopularCuisine:", err)
-// 			log.Println("-> #", elem.Uuid)
-// 			continue
-// 		}
+	var items []*Carts
+	for cursor.Next(context.TODO()) {
+		var elem Carts
+		err := cursor.Decode(&elem)
+		if err != nil {
+			log.Println("[Decode] PopularCuisine:", err)
+			log.Println("-> #", elem.CartUuid)
+			continue
+		}
 
-// 		items = append(items, &elem)
-// 	}
+		items = append(items, &elem)
+	}
 
-// 	if err := cursor.Err(); err != nil {
-// 		return nil, err
-// 	}
-// 	_ = cursor.Close(context.TODO())
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	_ = cursor.Close(context.TODO())
 
-// 	return items, nil
-// }
+	return items, nil
+}
 
 func (u *CartItem) Distinct(conditions map[string]interface{}, fieldName string, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	coll := u.Model()
@@ -139,23 +145,23 @@ func (u *CartItem) InsertMany(Items []interface{}) ([]interface{}, error) {
 	return resp.InsertedIDs, nil
 }
 
-// func (u *Carts) Update() (int64, error) {
-// 	coll := u.Model()
+func (u *CartItem) Update() (int64, error) {
+	coll := u.Model()
 
-// 	condition := make(map[string]interface{})
-// 	condition["uuid"] = u.Uuid
+	condition := make(map[string]interface{})
+	condition["uuid"] = u.CartUuid
 
-// 	u.UpdatedAt = util.GetNowUTC()
-// 	updateStr := make(map[string]interface{})
-// 	updateStr["$set"] = u
+	u.UpdatedAt = util.GetNowUTC()
+	updateStr := make(map[string]interface{})
+	updateStr["$set"] = u
 
-// 	resp, err := coll.UpdateOne(context.TODO(), condition, updateStr)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+	resp, err := coll.UpdateOne(context.TODO(), condition, updateStr)
+	if err != nil {
+		return 0, err
+	}
 
-// 	return resp.ModifiedCount, nil
-// }
+	return resp.ModifiedCount, nil
+}
 
 func (u *CartItem) UpdateByCondition(condition map[string]interface{}, data map[string]interface{}) (int64, error) {
 	coll := u.Model()
