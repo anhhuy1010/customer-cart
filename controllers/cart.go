@@ -54,6 +54,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 	if req.CartUuid == "" {
 		cartData.Uuid = util.GenerateUUID()
 		cartData.Total = 0
+
 		if _, err := cartData.Insert(); err != nil {
 			c.JSON(http.StatusInternalServerError, respond.UpdatedFail())
 			return
@@ -88,4 +89,43 @@ func (cartCtr CartController) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, respond.Success(cartItem, "Update successfully"))
+}
+func (cartCtl CartController) Detail(c *gin.Context) {
+	cartItemModel := new(models.CartItem)
+	var reqUri request.GetCartRequestUri
+	// Validation input
+	err := c.ShouldBindUri(&reqUri)
+	if err != nil {
+		_ = c.Error(err)
+		c.JSON(http.StatusBadRequest, respond.MissingParams())
+		return
+	}
+	itemCondition := bson.M{"cart_uuid": reqUri.CartUuid}
+	cartItems, err := cartItemModel.Find(itemCondition)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart items not found!"))
+		return
+	}
+
+	total := 0.0
+	var itemm []request.GetCartItemResponse
+	for _, item := range cartItems {
+		productTotal := item.ProductPrice * float64(item.Quantity)
+		total += productTotal
+
+		itemm = append(itemm, request.GetCartItemResponse{
+			ProductUuid:  item.ProductUuid,
+			ProductName:  item.ProductName,
+			ProductPrice: item.ProductPrice,
+			Quantity:     item.Quantity,
+			ProductTotal: productTotal,
+		})
+	}
+	response := request.GetCartResponse{
+		CartUuid: reqUri.CartUuid,
+		Items:    itemm,
+		Total:    total,
+	}
+	c.JSON(http.StatusOK, respond.Success(response, "Successfully"))
 }

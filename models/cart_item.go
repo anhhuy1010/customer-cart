@@ -22,11 +22,13 @@ type CartItem struct {
 	ProductPrice float64 `json:"product_price" bson:"product_price"`
 	Quantity     int     `json:"quantity" bson:"quantity"`
 	ProductTotal float64 `json:"product_total" bson:"product_total"`
+	IsDelete     int     `json:"is_delete" bson:"is_delete"`
+	IsActive     int     `json:"is_active" bson:"is_active"`
 }
 
 func (u *CartItem) Model() *mongo.Collection {
 	db := database.GetInstance()
-	return db.Collection("products")
+	return db.Collection("cart_items")
 }
 
 func (u *CartItem) Find(conditions map[string]interface{}, opts ...*options.FindOptions) ([]*CartItem, error) {
