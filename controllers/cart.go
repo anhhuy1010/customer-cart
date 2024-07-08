@@ -93,6 +93,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 }
 func (cartCtl CartController) Detail(c *gin.Context) {
 	cartItemModel := new(models.CartItem)
+	cartModels := new(models.Carts)
 	var reqUri request.GetCartRequestUri
 	err := c.ShouldBindUri(&reqUri)
 	if err != nil {
@@ -100,8 +101,16 @@ func (cartCtl CartController) Detail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, respond.MissingParams())
 		return
 	}
-	condition := bson.M{"cart_uuid": reqUri.CartUuid}
+
+	condition := bson.M{"uuid": reqUri.CartUuid}
+	_, err = cartModels.FindOne(condition)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart not found!"))
+		return
+	}
 	cartItems, err := cartItemModel.Find(condition)
+
 	if err != nil {
 		fmt.Println(err.Error())
 		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart items not found!"))
