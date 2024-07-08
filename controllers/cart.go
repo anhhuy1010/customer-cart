@@ -53,7 +53,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 	}
 	cartData := &models.Carts{}
 	if req.CartUuid == "" {
-		cartData.CartUuid = util.GenerateUUID()
+		cartData.Uuid = util.GenerateUUID()
 		cartData.Total = 0
 
 		if _, err := cartData.Insert(); err != nil {
@@ -61,7 +61,7 @@ func (cartCtr CartController) Create(c *gin.Context) {
 			return
 		}
 	} else {
-		cond := bson.M{"cart_uuid": req.CartUuid}
+		cond := bson.M{"uuid": req.CartUuid}
 		cartData, err = cartModel.FindOne(cond)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -75,13 +75,13 @@ func (cartCtr CartController) Create(c *gin.Context) {
 		return
 	}
 	cartItem := models.CartItem{
-		CartUuid:     cartData.CartUuid,
+		CartUuid:     cartData.Uuid,
 		ProductUuid:  req.ProductUuid,
 		ProductName:  productDetail.Name,
 		Quantity:     1,
 		ProductPrice: productDetail.Price,
 		ProductTotal: 1 * productDetail.Price,
-		CartItemUuid: util.GenerateUUID(),
+		Uuid:         util.GenerateUUID(),
 	}
 	_, err = cartItem.Insert()
 	if err != nil {
@@ -100,8 +100,8 @@ func (cartCtl CartController) Detail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, respond.MissingParams())
 		return
 	}
-	itemCondition := bson.M{"cart_uuid": reqUri.CartUuid}
-	cartItems, err := cartItemModel.Find(itemCondition)
+	condition := bson.M{"cart_uuid": reqUri.CartUuid}
+	cartItems, err := cartItemModel.Find(condition)
 	if err != nil {
 		fmt.Println(err.Error())
 		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart items not found!"))
@@ -116,7 +116,7 @@ func (cartCtl CartController) Detail(c *gin.Context) {
 
 		itemm = append(itemm, request.GetCartItemResponse{
 			ProductUuid:  item.ProductUuid,
-			CartItemUuid: item.CartItemUuid,
+			CartItemUuid: item.Uuid,
 			CartUuid:     item.CartUuid,
 			ProductName:  item.ProductName,
 			ProductPrice: item.ProductPrice,
@@ -148,7 +148,7 @@ func (cartCtl CartController) Delete(c *gin.Context) {
 	cartitemm, err := cartModel.FindOne(condition)
 	if err != nil {
 		fmt.Println(err.Error())
-		c.JSON(http.StatusOK, respond.ErrorCommon("cart no found!"))
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("cart no found!"))
 		return
 	}
 	cartitemm.IsDelete = constant.DELETE
@@ -156,8 +156,8 @@ func (cartCtl CartController) Delete(c *gin.Context) {
 	_, err = cartitemm.Update()
 	if err != nil {
 		fmt.Println(err.Error())
-		c.JSON(http.StatusOK, respond.UpdatedFail())
+		c.JSON(http.StatusBadRequest, respond.UpdatedFail())
 		return
 	}
-	c.JSON(http.StatusOK, respond.Success(cartitemm.CartItemUuid, "Delete successfully"))
+	c.JSON(http.StatusOK, respond.Success(cartitemm.Uuid, "Delete successfully"))
 }

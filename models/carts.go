@@ -15,7 +15,7 @@ import (
 //"go.mongodb.org/mongo-driver/bson"
 
 type Carts struct {
-	CartUuid string  `json:"cart_uuid" bson:"cart_uuid"`
+	Uuid     string  `json:"uuid" bson:"uuid"`
 	Total    float64 `json:"total" bson:"total"`
 	IsDelete int     `json:"is_delete" bson:"is_delete"`
 }

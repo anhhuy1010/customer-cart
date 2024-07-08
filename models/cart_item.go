@@ -21,7 +21,7 @@ import (
 type CartItem struct {
 	CartUuid     string    `json:"cart_uuid" bson:"cart_uuid"`
 	ProductUuid  string    `json:"product_uuid" bson:"product_uuid"`
-	CartItemUuid string    `json:"cart_item_uuid" bson:"cart_item_uuid"`
+	Uuid         string    `json:"uuid" bson:"uuid"`
 	ProductName  string    `json:"product_name" bson:"product_name"`
 	ProductPrice float64   `json:"product_price" bson:"product_price"`
 	Quantity     int       `json:"quantity" bson:"quantity"`
@@ -83,7 +83,7 @@ func (u *Carts) Pagination(ctx context.Context, conditions map[string]interface{
 		err := cursor.Decode(&elem)
 		if err != nil {
 			log.Println("[Decode] PopularCuisine:", err)
-			log.Println("-> #", elem.CartUuid)
+			log.Println("-> #", elem.Uuid)
 			continue
 		}
 
