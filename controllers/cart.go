@@ -94,7 +94,6 @@ func (cartCtr CartController) Create(c *gin.Context) {
 func (cartCtl CartController) Detail(c *gin.Context) {
 	cartItemModel := new(models.CartItem)
 	var reqUri request.GetCartRequestUri
-	// Validation input
 	err := c.ShouldBindUri(&reqUri)
 	if err != nil {
 		_ = c.Error(err)
@@ -143,21 +142,15 @@ func (cartCtl CartController) Delete(c *gin.Context) {
 		return
 	}
 
-	condition := bson.M{"cart_uuid": reqUri.CartUuid}
-	_, err = cartModel.FindOne(condition)
-	if err != nil {
-		fmt.Println(err.Error())
-		c.JSON(http.StatusOK, respond.ErrorCommon("cart no found!"))
-		return
-	}
-	condition = bson.M{"cart_item_uuid": reqUri.CartItemUuid}
+	condition := bson.M{
+		"cart_uuid":      reqUri.CartUuid,
+		"cart_item_uuid": reqUri.CartItemUuid}
 	cartitemm, err := cartModel.FindOne(condition)
 	if err != nil {
 		fmt.Println(err.Error())
 		c.JSON(http.StatusOK, respond.ErrorCommon("cart no found!"))
 		return
 	}
-
 	cartitemm.IsDelete = constant.DELETE
 
 	_, err = cartitemm.Update()

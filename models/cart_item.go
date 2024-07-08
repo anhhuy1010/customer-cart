@@ -149,7 +149,7 @@ func (u *CartItem) Update() (int64, error) {
 	coll := u.Model()
 
 	condition := make(map[string]interface{})
-	condition["uuid"] = u.CartUuid
+	condition["cart_uuid"] = u.CartUuid
 
 	u.UpdatedAt = util.GetNowUTC()
 	updateStr := make(map[string]interface{})
