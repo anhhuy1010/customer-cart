@@ -15,8 +15,9 @@ import (
 //"go.mongodb.org/mongo-driver/bson"
 
 type Carts struct {
-	Uuid  string  `json:"uuid" bson:"uuid"`
-	Total float64 `json:"total" bson:"total"`
+	Uuid     string  `json:"uuid" bson:"uuid"`
+	Total    float64 `json:"total" bson:"total"`
+	IsDelete int     `json:"is_delete" bson:"is_delete"`
 }
 
 func (u *Carts) Model() *mongo.Collection {

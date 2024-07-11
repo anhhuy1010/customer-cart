@@ -38,7 +38,9 @@ func RouteInit(engine *gin.Engine) {
 		apiV1.DELETE("/users/:uuid", userCtr.Delete)
 
 		apiV1.POST("/cart", cartCtr.Create)
-		// apiV1.GET("/cart/:cart_uuid", cartCtr.Detail)
+		apiV1.GET("/cart/:cart_uuid", cartCtr.Detail)
+		apiV1.DELETE("/cart/:cart_uuid/:cart_item_uuid", cartCtr.Delete)
+
 	}
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
