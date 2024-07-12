@@ -8,7 +8,8 @@ import (
 )
 
 type GrpcService struct {
-	MenuConnect *grpc.ClientConn
+	MenuConnect  *grpc.ClientConn
+	OrderConnect *grpc.ClientConn
 }
 
 var grpcService *GrpcService
@@ -30,6 +31,9 @@ func (sv *GrpcService) NewService() (*GrpcService, error) {
 
 			if k == "menu" {
 				sv.MenuConnect = conn
+			}
+			if k == "order" {
+				sv.OrderConnect = conn
 			}
 		}
 		grpcService = sv

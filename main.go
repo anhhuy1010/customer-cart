@@ -82,7 +82,6 @@ func StartGRPC(port string) error {
 	// register service
 	server = grpc.NewServer()
 	pbUser.RegisterUserServer(server, service.NewUserServer())
-
 	// start gRPC server
 	fmt.Println("starting gRPC server... port: ", port)
 

@@ -13,6 +13,7 @@ import (
 	"github.com/anhhuy1010/customer-cart/models"
 	request "github.com/anhhuy1010/customer-cart/request/cart"
 	pbProduct "github.com/anhhuy1010/customer-menu/grpc/proto/product"
+	pbOrder "github.com/anhhuy1010/customer-order/grpc/proto/order"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/metadata"
@@ -169,4 +170,95 @@ func (cartCtl CartController) Delete(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, respond.Success(cartitemm.Uuid, "Delete successfully"))
+}
+
+func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, Phone string, Address string, OrderItem []pbOrder.CreateOrderRequest_CreateOrderItemRequest) (*pbOrder.CreateOrderResponse, error) {
+	grpcConn := grpc.GetInstance()
+	client := pbOrder.NewOrderClient(grpcConn.OrderConnect)
+	req := pbOrder.CreateOrderRequest{
+		CartUuid:     CartUuid,
+		CustomerName: CustomerName,
+		Phone:        Phone,
+		Address:      Address,
+		OrderItem:    []*pbOrder.CreateOrderRequest_CreateOrderItemRequest{},
+	}
+	CartItemModel := new(models.CartItem)
+	condition := bson.M{"cart_uuid": CartUuid}
+	order, err := CartItemModel.Findd(condition)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	for _, item := range order {
+		orderItem := &pbOrder.CreateOrderRequest_CreateOrderItemRequest{
+			ProductUuid:  item.ProductUuid,
+			ProductName:  item.ProductName,
+			ProductPrice: item.ProductPrice,
+			Quantity:     int64(item.Quantity),
+			ProductTotal: item.ProductPrice * float64(item.Quantity),
+		}
+		req.OrderItem = append(req.OrderItem, orderItem)
+	}
+	header := metadata.New(map[string]string{})
+	ctx := metadata.NewOutgoingContext(context.TODO(), header)
+
+	createOrder, err := client.Create(ctx, &req)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	return createOrder, nil
+}
+
+func (cartCtr CartController) Checkout(c *gin.Context) {
+	cartModel := new(models.CartItem)
+	var req request.CheckoutRequest
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		_ = c.Error(err)
+		c.JSON(http.StatusBadRequest, respond.MissingParams())
+		return
+	}
+
+	cond := bson.M{"cart_uuid": req.CartUuid}
+	OrderData, err := cartModel.Find(cond)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart not found!"))
+		return
+	}
+	fmt.Println("Cart found with condition:", cond)
+
+	var orderItems []pbOrder.CreateOrderRequest_CreateOrderItemRequest
+	for _, item := range OrderData {
+		orderItem := pbOrder.CreateOrderRequest_CreateOrderItemRequest{
+			ProductUuid:  item.ProductUuid,
+			ProductName:  item.ProductName,
+			ProductPrice: item.ProductPrice,
+			Quantity:     int64(item.Quantity),
+			ProductTotal: item.ProductPrice * float64(item.Quantity),
+		}
+		orderItems = append(orderItems, orderItem)
+	}
+	checkoutOrder, err := cartCtr.CreateOrder(req.CartUuid, req.CustomerName, req.Phone, req.Address, orderItems)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Create order error!"))
+		return
+	}
+	for _, item := range OrderData {
+		cartItem := models.CartItem{
+			CartUuid:     req.CartUuid,
+			ProductUuid:  item.ProductUuid,
+			ProductName:  item.ProductName,
+			Quantity:     item.Quantity,
+			ProductPrice: item.ProductPrice,
+			ProductTotal: item.ProductPrice * float64(item.Quantity),
+		}
+		_, err = cartItem.Insert()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart Items error!"))
+			return
+		}
+	}
+	c.JSON(http.StatusOK, respond.Success(checkoutOrder, "Order created successfully"))
 }

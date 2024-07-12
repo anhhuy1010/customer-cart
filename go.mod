@@ -21,6 +21,7 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/anhhuy1010/customer-menu v0.0.0-20240704100632-8e8946988b95 // indirect
+	github.com/anhhuy1010/customer-order v0.0.0-20240712041436-42bb397ca3b5 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
