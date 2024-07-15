@@ -14,11 +14,10 @@ import (
 	request "github.com/anhhuy1010/customer-cart/request/cart"
 	pbProduct "github.com/anhhuy1010/customer-menu/grpc/proto/product"
 	pbOrder "github.com/anhhuy1010/customer-order/grpc/proto/order"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/metadata"
-
-	"github.com/gin-gonic/gin"
 )
 
 type CartController struct {
@@ -172,7 +171,7 @@ func (cartCtl CartController) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, respond.Success(cartitemm.Uuid, "Delete successfully"))
 }
 
-func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, Phone string, Address string, OrderItem []pbOrder.CreateOrderRequest_CreateOrderItemRequest) (*pbOrder.CreateOrderResponse, error) {
+func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, Phone string, Address string, OrderItem []pbOrder.CreateOrderItemRequest) (*pbOrder.CreateOrderResponse, error) {
 	grpcConn := grpc.GetInstance()
 	client := pbOrder.NewOrderClient(grpcConn.OrderConnect)
 	req := pbOrder.CreateOrderRequest{
@@ -180,7 +179,7 @@ func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, 
 		CustomerName: CustomerName,
 		Phone:        Phone,
 		Address:      Address,
-		OrderItem:    []*pbOrder.CreateOrderRequest_CreateOrderItemRequest{},
+		OrderItem:    []*pbOrder.CreateOrderItemRequest{},
 	}
 	CartItemModel := new(models.CartItem)
 	condition := bson.M{"cart_uuid": CartUuid}
@@ -190,7 +189,7 @@ func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, 
 		return nil, err
 	}
 	for _, item := range order {
-		orderItem := &pbOrder.CreateOrderRequest_CreateOrderItemRequest{
+		orderItem := &pbOrder.CreateOrderItemRequest{
 			ProductUuid:  item.ProductUuid,
 			ProductName:  item.ProductName,
 			ProductPrice: item.ProductPrice,
@@ -211,7 +210,8 @@ func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, 
 }
 
 func (cartCtr CartController) Checkout(c *gin.Context) {
-	cartModel := new(models.CartItem)
+	cartModel := new(models.Carts)
+	cartItemModel := new(models.CartItem)
 	var req request.CheckoutRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
@@ -219,9 +219,14 @@ func (cartCtr CartController) Checkout(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, respond.MissingParams())
 		return
 	}
-
-	cond := bson.M{"cart_uuid": req.CartUuid}
-	OrderData, err := cartModel.Find(cond)
+	cond := bson.M{"uuid": req.CartUuid}
+	_, err = cartModel.FindOne(cond)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart Uuid not found!"))
+	}
+	cond = bson.M{"cart_uuid": req.CartUuid}
+	cartItems, err := cartItemModel.Find(cond)
 	if err != nil {
 		fmt.Println(err.Error())
 		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart not found!"))
@@ -229,9 +234,9 @@ func (cartCtr CartController) Checkout(c *gin.Context) {
 	}
 	fmt.Println("Cart found with condition:", cond)
 
-	var orderItems []pbOrder.CreateOrderRequest_CreateOrderItemRequest
-	for _, item := range OrderData {
-		orderItem := pbOrder.CreateOrderRequest_CreateOrderItemRequest{
+	var orderItems []pbOrder.CreateOrderItemRequest
+	for _, item := range cartItems {
+		orderItem := pbOrder.CreateOrderItemRequest{
 			ProductUuid:  item.ProductUuid,
 			ProductName:  item.ProductName,
 			ProductPrice: item.ProductPrice,
@@ -244,21 +249,6 @@ func (cartCtr CartController) Checkout(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, respond.ErrorCommon("Create order error!"))
 		return
-	}
-	for _, item := range OrderData {
-		cartItem := models.CartItem{
-			CartUuid:     req.CartUuid,
-			ProductUuid:  item.ProductUuid,
-			ProductName:  item.ProductName,
-			Quantity:     item.Quantity,
-			ProductPrice: item.ProductPrice,
-			ProductTotal: item.ProductPrice * float64(item.Quantity),
-		}
-		_, err = cartItem.Insert()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, respond.ErrorCommon("Cart Items error!"))
-			return
-		}
 	}
 	c.JSON(http.StatusOK, respond.Success(checkoutOrder, "Order created successfully"))
 }
