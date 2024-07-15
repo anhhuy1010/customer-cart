@@ -21,4 +21,8 @@ grpc:
   menu:
     host: host.docker.internal
     port: 5006
+  order:
+    host: host.docker.internal
+    port: 5005
+  
 
