@@ -181,9 +181,9 @@ func (cartCtl CartController) CreateOrder(CartUuid string, CustomerName string, 
 		Address:      Address,
 		OrderItem:    []*pbOrder.CreateOrderItemRequest{},
 	}
-	CartItemModel := new(models.CartItem)
+	cartItemModel := new(models.CartItem)
 	condition := bson.M{"cart_uuid": CartUuid}
-	order, err := CartItemModel.Findd(condition)
+	order, err := cartItemModel.Find(condition)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err

@@ -198,29 +198,3 @@ func (u *CartItem) Count(ctx context.Context, condition map[string]interface{}) 
 
 	return total, nil
 }
-func (u *CartItem) Findd(conditions map[string]interface{}, opts ...*options.FindOptions) ([]*CartItem, error) {
-	coll := u.Model()
-
-	cursor, err := coll.Find(context.TODO(), conditions, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	var carts []*CartItem
-	for cursor.Next(context.TODO()) {
-		var elem CartItem
-		err := cursor.Decode(&elem)
-		if err != nil {
-			return nil, err
-		}
-
-		carts = append(carts, &elem)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, err
-	}
-	_ = cursor.Close(context.TODO())
-
-	return carts, nil
-}
